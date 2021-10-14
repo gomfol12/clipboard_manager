@@ -1,0 +1,58 @@
+#!/bin/bash
+history_dir="${XDG_CACHE_HOME:-$HOME/.cache}/clipboard_history/"
+default_string="UTF8_STRING"
+preview_length=100
+
+log()
+{
+    printf "%s\n" "$1" | xargs
+}
+
+if [ -d "$history_dir" ]; then
+    history_content=$(ls "$history_dir" -t)
+else
+    log "History directory does not exist. Did you start clipmanager?"
+    exit 1
+fi
+
+lines_to_select=()
+file_names=()
+
+dep_ck()
+{
+    for pr; do
+        if ! command -v "$pr" >/dev/null 2>&1; then
+            log "command $pr not found, install $pr"
+            exit 1
+        fi
+    done
+}
+dep_ck "xclip" "dmenu"
+
+# check if directory exists and is not empty
+if [ -n "$history_content" ]; then
+    # create a preview for copied content
+    for entry in $history_content; do
+        read -r -N $preview_length preview < "$history_dir$entry"
+        preview=$(echo "$preview" | tr '\n' ' ')
+        line_count=$(grep -c "" "$history_dir$entry")
+        [ "$line_count" -gt 1 ] && preview+="<$line_count lines>"
+        lines_to_select+=("$preview")
+        file_names+=("$entry")
+    done
+
+    # using dmenu for the selection
+    selected=$(printf "%s\n" "${lines_to_select[@]}" | dmenu -l 10)
+    dmenu_exit=$?
+    [ "$dmenu_exit" -ne 0 ] && exit 1
+
+    # copy selected content to clipboard
+    for i in ${!lines_to_select[*]}; do
+        if [ "${lines_to_select[i]}" = "$selected" ]; then
+            xclip -selection clipboard -t "$default_string" < "$history_dir/${file_names[i]}"
+        fi
+    done
+else
+    log "History is empty"
+    exit 1
+fi

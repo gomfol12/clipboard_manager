@@ -1,0 +1,113 @@
+#!/bin/sh
+history_dir="${XDG_CACHE_HOME:-$HOME/.cache}/clipboard_history/"
+history_max_size=1000
+pref_type="image/png
+image/jpeg
+image/bmp
+text/plain
+"
+default_string="UTF8_STRING"
+log_to_file=1
+log_file_path="${XDG_CACHE_HOME:-$HOME/.cache}/clipmanager.log"
+
+history_current_size=0
+disabled=0
+
+log()
+{
+    if [ "$log_to_file" -ne 0 ]; then
+        printf "%s\n" "$1" | xargs >> "$log_file_path"
+    fi
+    printf "\033[31m->\033[97m %s\033[0m\n" "$1" | xargs
+}
+
+# check if clipmanager is already running
+if [ -d "$history_dir"  ]; then
+    log "History directory already exists. Another instance of clipmanager is running"
+    exit 1
+fi
+
+mkdir "$history_dir"
+
+# check if log file exists from previous session and rename it
+if [ "$log_to_file" -ne 0 ] && [ -f "$log_file_path" ]; then
+    mv "$log_file_path" "$log_file_path.old"
+fi
+
+dep_ck()
+{
+    for pr; do
+        if ! command -v "$pr" >/dev/null 2>&1; then
+            log "command $pr not found, install $pr"
+            exit 1
+        fi
+    done
+}
+dep_ck "xclip" "sha256sum"
+
+clean_up()
+{
+    rm -r "$history_dir"
+    exit
+}
+
+trap "exit" INT TERM
+trap "clean_up" EXIT
+
+trap "disabled=1" USR1
+trap "disabled=0" USR2
+
+log "$(basename "$0")"
+log "----------"
+while true; do
+    # target check
+    targets=$(xclip -selection clipboard -o -t TARGETS)
+    targets_exit=$?
+    log "TARGETS check: $targets_exit"
+
+    if [ "$targets_exit" -ne 0 ]; then
+# if target check fails wait for another copy event
+        log "Waiting for selection with: $default_string"
+        xclip -verbose -selection clipboard -t "$default_string" -in < /dev/null || exit 1
+    else
+# if target check succeeds take ownership of clipboard and create a history entry
+        log "TARGETS clipboard: $targets"
+        log "TARGETS preferred: $pref_type"
+        log "TARGETS default: $default_string"
+
+        # match target with the preferred ones
+        grep_string=$(printf "%s" "$targets" | tr ' ' '|')
+        first_found=$(printf "%s%s" "$pref_type" "$default_string" | grep -wEm1 "$grep_string")
+
+        if [ -n "$first_found" ]; then
+            log "TARGET found: $first_found"
+
+            if [ "$disabled" -eq 0 ]; then
+                # when clipboard data is text create a history entry
+                if [ "$first_found" = "text/plain" ] || [ "$first_found" = "$default_string" ]; then
+                    clipboard=$(xclip -verbose -selection clipboard -t "$first_found" -o)
+                    clipboard_hash=$(printf "%s" "$clipboard" | sha256sum | cut -d" " -f1)
+
+                    if [ ! -f "$history_dir/$clipboard_hash" ]; then
+                        history_current_size=$((history_current_size + 1))
+                        log "History: created text entry"
+                    fi
+
+                    printf "%s" "$clipboard" > "$history_dir/$clipboard_hash"
+                fi
+
+                if [ "$history_current_size" -gt "$history_max_size" ]; then
+                    # delete the oldest history entry
+                    rm "$(find "$history_dir" -type f -printf '%T+ %p\n' | sort | head -1 | sed 's/[^ ]* //')"
+                    history_current_size=$((history_current_size - 1))
+                    log "History: full, entry deleted"
+                fi
+            fi
+
+            # preserve clipboard contents
+            xclip -verbose -selection clipboard -t "$first_found" -o | xclip -verbose -selection clipboard -t "$first_found" -in
+        else
+            log "TARGET not found"
+        fi
+    fi
+done

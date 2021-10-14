@@ -1,0 +1,32 @@
+#!/bin/sh
+clipmanager_pid=$(pgrep -u "$(id -u)" -nf clipmanager$)
+
+log()
+{
+    printf "%s\n" "$1" | xargs
+}
+
+usage()
+{
+    echo "clipctl"
+    echo "  enable:     enable clipmanager"
+    echo "  disable:    disable clipmanager"
+    echo "  clear:      clear clipboard"
+    echo "  kill:       kill clipmanager"
+    echo "  help:       help menu"
+    exit
+}
+
+if [ -z "$clipmanager_pid" ]; then
+    log "clipmanager is not running"
+    exit
+fi
+
+case "$1" in
+    "enable") kill -USR2 "$clipmanager_pid" ;;
+    "disable") kill -USR1 "$clipmanager_pid" ;;
+    "clear") printf "clear" | xclip -selection clipboard ;;
+    "kill") kill -TERM "$clipmanager_pid" && printf "kill" | xclip -selection clipboard ;;
+    "help") usage ;;
+    *) log "Invalid argument. Try help for help" ;;
+esac
