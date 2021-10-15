@@ -9,6 +9,7 @@ text/plain
 default_string="UTF8_STRING"
 log_to_file=1
 log_file_path="${XDG_CACHE_HOME:-$HOME/.cache}/clipmanager.log"
+lock_file_path="${XDG_CACHE_HOME:-$HOME/.cache}/clipmanager.lock"
 
 history_current_size=0
 disabled=0
@@ -23,11 +24,21 @@ log()
 
 # check if clipmanager is already running
 if [ -d "$history_dir"  ]; then
-    log "History directory already exists. Another instance of clipmanager is running"
-    exit 1
+    if [ -f "$lock_file_path" ]; then
+        lock_file_pid=$(cat "$lock_file_path")
+        if [ -d "/proc/$lock_file_pid" ] && [ "$(grep -o "^Name:.*$" "/proc/$lock_file_pid/status" | awk '{print $2}')" = "clipmanager" ]; then
+            log "Clipmanager is already running"
+            exit 1
+        else
+            rm -r "$history_dir"
+        fi
+    else
+        rm -r "$history_dir"
+    fi
 fi
 
 mkdir "$history_dir"
+echo "$$" > "$lock_file_path"
 
 # check if log file exists from previous session and rename it
 if [ "$log_to_file" -ne 0 ] && [ -f "$log_file_path" ]; then
@@ -48,6 +59,7 @@ dep_ck "xclip" "sha256sum"
 clean_up()
 {
     rm -r "$history_dir"
+    rm "$lock_file_path"
     exit
 }
 
