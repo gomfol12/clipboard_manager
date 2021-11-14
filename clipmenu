@@ -53,12 +53,12 @@ if [ -n "$history_content" ]; then
     for i in ${!lines_to_select[*]}; do
         if [ "${lines_to_select[i]}" = "$selected" ]; then
             xclip -selection clipboard -t "$default_string" < "$history_dir/${file_names[i]}"
-	    if [ $paste == 'p' ]
-	    then
-		i=$(xclip -selection clipboard -o)
-		xdotool type "$i"
-	    fi 
-	fi
+            if [ $paste == 'p' ]
+            then
+            i=$(xclip -selection clipboard -o)
+            xdotool type "$i"
+	        fi
+	    fi
     done
 else
     log "History is empty"
