@@ -24,7 +24,12 @@ A very simple clipboard manager script using xclip and dmenu
 
         mod1 + y
                 clipmenu
-* For Pasting by select call clipmenu -p (depends on xdotool) you may neet to run setxkbmap us/de/... to properly write special characters  
+* For pasting on select (depends on xdotool) 
+
+	clipmenu -p  
+
+* you may neet to set xkbmap to properly write special characters
+	setxkbmap us/de/... 
 * Now you can start copying and pasting
 * Use the key combo for selecting an item in the history
 * Use clipctl for enabling/disabling the history. This might be useful when copying passwords
