@@ -10,6 +10,7 @@ A very simple clipboard manager script using xclip and dmenu
 * xclip
 * dmenu
 * xdotool (if using instant pasting)
+
 ## Install
     make install
 
