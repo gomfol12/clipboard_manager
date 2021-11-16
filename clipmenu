@@ -29,6 +29,9 @@ dep_ck()
 }
 dep_ck "xclip" "dmenu"
 
+# checks if -p is set if so set $p to p 
+getopts p paste
+
 # check if directory exists and is not empty
 if [ -n "$history_content" ]; then
     # create a preview for copied content
@@ -50,6 +53,11 @@ if [ -n "$history_content" ]; then
     for i in ${!lines_to_select[*]}; do
         if [ "${lines_to_select[i]}" = "$selected" ]; then
             xclip -selection clipboard -t "$default_string" < "$history_dir/${file_names[i]}"
+            if [ $paste == 'p' ]
+            then
+                i=$(xclip -selection clipboard -o)
+                xdotool type "$i"
+            fi
         fi
     done
 else
