@@ -91,14 +91,15 @@ while true; do
 
         # match target with the preferred ones
         grep_string=$(printf "%s" "$targets" | tr ' ' '|')
-        first_found=$(printf "%s%s" "$pref_type" "$default_string" | grep -wEm1 "$grep_string")
+        first_found_string=$(printf "%s%s" "$pref_type" "$default_string" | tr ' ' '\n')
+        first_found=$(printf "%b" "$first_found_string" | grep -wEm1 "$grep_string\$")
 
         if [ -n "$first_found" ]; then
             log "TARGET found: $first_found"
 
             if [ "$disabled" -eq 0 ]; then
                 # when clipboard data is text create a history entry
-                if [ "$first_found" = "text/plain" ] || [ "$first_found" = "$default_string" ]; then
+                if [ "$first_found" = "text/plain" ] || [ "$first_found" = "text/plain;charset=utf-8" ] || [ "$first_found" = "$default_string" ]; then
                     clipboard=$(xclip -verbose -selection clipboard -t "$first_found" -o)
                     clipboard_hash=$(printf "%s" "$clipboard" | sha256sum | cut -d" " -f1)
 
