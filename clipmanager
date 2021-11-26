@@ -6,7 +6,6 @@ image/jpeg
 image/bmp
 x-special/gnome-copied-files
 text/plain;charset=utf-8
-text/plain
 "
 default_string="UTF8_STRING"
 log_to_file=1
@@ -92,7 +91,7 @@ while true; do
         # match target with the preferred ones
         grep_string=$(printf "%s" "$targets" | tr ' ' '|')
         first_found_string=$(printf "%s%s" "$pref_type" "$default_string" | tr ' ' '\n')
-        first_found=$(printf "%b" "$first_found_string" | grep -wEm1 "$grep_string\$")
+        first_found=$(printf "%b" "$first_found_string" | grep -wEm1 "^$grep_string$")
 
         if [ -n "$first_found" ]; then
             log "TARGET found: $first_found"
