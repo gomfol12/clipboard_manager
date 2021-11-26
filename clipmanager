@@ -5,6 +5,7 @@ pref_type="image/png
 image/jpeg
 image/bmp
 x-special/gnome-copied-files
+text/plain;charset=utf-8
 text/plain
 "
 default_string="UTF8_STRING"
