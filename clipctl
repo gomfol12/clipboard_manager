@@ -1,9 +1,27 @@
 #!/bin/sh
-clipmanager_pid=$(pgrep -u "$(id -u)" -nf clipmanager$)
+clipmanager_name="clipmanager"
+clipmanager_pid=$(pgrep -u "$(id -u)" -nf "$clipmanager_name$")
 
 log()
 {
-    printf "%s\n" "$1" | xargs
+    # printf "%s\n" "$1" | xargs
+    printf "\033[31m->\033[97m %s\033[0m\n" "$1" | xargs
+}
+
+redirect()
+{
+    exec </dev/null 1>&0 2>&0
+}
+
+fork()
+{
+    exec setsid -f -- "$@"
+}
+
+spawn()
+{
+    redirect
+    fork "$@"
 }
 
 usage()
@@ -11,22 +29,54 @@ usage()
     echo "clipctl"
     echo "  enable:     enable clipmanager"
     echo "  disable:    disable clipmanager"
+    echo "  run/start:  start clipmanager"
+    echo "  kill/stop:  kill clipmanager"
+    echo "  restart:    restart clipmanager"
+    echo "  status:     check if clipmanager is running"
     echo "  clear:      clear clipboard"
-    echo "  kill:       kill clipmanager"
     echo "  help:       help menu"
     exit
 }
 
-if [ -z "$clipmanager_pid" ]; then
-    log "clipmanager is not running"
-    exit
-fi
+is_running()
+{
+    if [ -z "$clipmanager_pid" ]; then
+        log "Clipmanager is not running"
+        return 1
+    else
+        return 0
+    fi
+}
+
+is_running_inv()
+{
+    if [ -z "$clipmanager_pid" ]; then
+        return 1
+    else
+        log "Clipmanager is already running"
+        return 0
+    fi
+}
+
+clip_kill()
+{
+    kill -TERM "$clipmanager_pid" && printf "kill" | xclip -selection clipboard
+}
 
 case "$1" in
-    "enable") kill -USR2 "$clipmanager_pid" ;;
-    "disable") kill -USR1 "$clipmanager_pid" ;;
+    "enable") is_running && kill -USR2 "$clipmanager_pid" ;;
+    "disable") is_running && kill -USR1 "$clipmanager_pid" ;;
+    "run"|"start") is_running_inv || spawn clipmanager ;;
+    "kill"|"stop") is_running && clip_kill ;;
+    "restart")
+        if [ -n "$clipmanager_pid" ]; then
+            clip_kill && spawn clipmanager
+        else
+            spawn clipmanager
+        fi
+        ;;
+    "status") is_running && is_running_inv ;;
     "clear") printf "clear" | xclip -selection clipboard ;;
-    "kill") kill -TERM "$clipmanager_pid" && printf "kill" | xclip -selection clipboard ;;
     "help") usage ;;
     *) log "Invalid argument. Try help for help" ;;
 esac
