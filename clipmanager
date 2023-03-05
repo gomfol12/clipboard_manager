@@ -1,7 +1,9 @@
 #!/bin/sh
 history_dir="${XDG_CACHE_HOME:-$HOME/.cache}/clipboard_history/"
 history_max_size=1000
-pref_type="image/png
+pref_type="application/xournal
+application/x-openoffice-embed-source-xml;windows_formatname=\"Star Embed Source (XML)\"
+image/png
 image/jpeg
 image/bmp
 x-special/gnome-copied-files
@@ -89,9 +91,18 @@ while true; do
         log "TARGETS default: $default_string"
 
         # match target with the preferred ones
-        grep_string=$(printf "%s" "$targets" | tr ' ' '|')
-        first_found_string=$(printf "%s%s" "$pref_type" "$default_string" | tr ' ' '\n')
-        first_found=$(printf "%b" "$first_found_string" | grep -wEm1 "^$grep_string$")
+        combined_search_string=$(printf "%b%b" "$pref_type" "$default_string")
+        SAVEIFS=$IFS
+        IFS=$(printf "\n\b")
+        for f in $(printf "%b" "$combined_search_string"); do
+            for t in $(printf "%b" "$targets"); do
+                if [ "$f" = "$t" ]; then
+                    first_found="$f"
+                    break 2;
+                fi
+            done
+        done
+        IFS=$SAVEIFS
 
         if [ -n "$first_found" ]; then
             log "TARGET found: $first_found"
