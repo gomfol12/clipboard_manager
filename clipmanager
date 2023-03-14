@@ -136,6 +136,9 @@ while true; do
                         if [ -n "$id" ]; then
                             first_found="$id"
                             break;
+                        else
+                            first_found="UTF8_STRING"
+                            break;
                         fi
                     done
                     IFS=$SAVEIFS
