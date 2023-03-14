@@ -20,13 +20,13 @@ disabled=0
 log()
 {
     if [ "$log_to_file" -ne 0 ]; then
-        printf "%s\n" "$1" | xargs >> "$log_file_path"
+        printf "%s\n" "$1" | xargs >>"$log_file_path"
     fi
     printf "\033[31m->\033[97m %s\033[0m\n" "$1" | xargs
 }
 
 # check if clipmanager is already running
-if [ -d "$history_dir"  ]; then
+if [ -d "$history_dir" ]; then
     if [ -f "$lock_file_path" ]; then
         lock_file_pid=$(cat "$lock_file_path")
         if [ -d "/proc/$lock_file_pid" ] && [ "$(grep -o "^Name:.*$" "/proc/$lock_file_pid/status" | awk '{print $2}')" = "clipmanager" ]; then
@@ -41,7 +41,7 @@ if [ -d "$history_dir"  ]; then
 fi
 
 mkdir "$history_dir"
-echo "$$" > "$lock_file_path"
+echo "$$" >"$lock_file_path"
 
 # check if log file exists from previous session and rename it
 if [ "$log_to_file" -ne 0 ] && [ -f "$log_file_path" ]; then
@@ -81,11 +81,11 @@ while true; do
     log "TARGETS check: $targets_exit"
 
     if [ "$targets_exit" -ne 0 ]; then
-# if target check fails wait for another copy event
+        # if target check fails wait for another copy event
         log "Waiting for selection with: $default_string"
-        xclip -verbose -selection clipboard -t "$default_string" -in < /dev/null || exit 1
+        xclip -verbose -selection clipboard -t "$default_string" -in </dev/null || exit 1
     else
-# if target check succeeds take ownership of clipboard and create a history entry
+        # if target check succeeds take ownership of clipboard and create a history entry
         log "TARGETS clipboard: $targets"
         log "TARGETS preferred: $pref_type"
         log "TARGETS default: $default_string"
@@ -98,7 +98,7 @@ while true; do
             for t in $(printf "%b" "$targets"); do
                 if [ "$f" = "$t" ]; then
                     first_found="$f"
-                    break 2;
+                    break 2
                 fi
             done
         done
@@ -118,7 +118,7 @@ while true; do
                         log "History: created text entry"
                     fi
 
-                    printf "%s" "$clipboard" > "$history_dir/$clipboard_hash"
+                    printf "%s" "$clipboard" >"$history_dir/$clipboard_hash"
                 fi
 
                 if [ "$history_current_size" -gt "$history_max_size" ]; then
@@ -126,6 +126,19 @@ while true; do
                     rm "$(find "$history_dir" -type f -printf '%T+ %p\n' | sort | head -1 | sed 's/[^ ]* //')"
                     history_current_size=$((history_current_size - 1))
                     log "History: full, entry deleted"
+                fi
+
+                if [ "$first_found" = "application/x-openoffice-embed-source-xml;windows_formatname=\"Star Embed Source (XML)\"" ]; then
+                    SAVEIFS=$IFS
+                    IFS=$(printf "\n\b")
+                    for t in $(printf "%b" "$targets"); do
+                        id=$(echo "$t" | grep -Eo "application/x-libreoffice-internal-id-.*")
+                        if [ -n "$id" ]; then
+                            first_found="$id"
+                            break;
+                        fi
+                    done
+                    IFS=$SAVEIFS
                 fi
             fi
 
