@@ -129,22 +129,23 @@ while true; do
                 fi
 
                 if [ "$first_found" = "application/x-openoffice-embed-source-xml;windows_formatname=\"Star Embed Source (XML)\"" ]; then
-                    SAVEIFS=$IFS
-                    IFS=$(printf "\n\b")
-                    for t in $(printf "%b" "$targets"); do
-                        id=$(printf "%b" "$t" | grep -Eo 'application/x-libreoffice-internal-id-[0-9]+')
-                        if [ -n "$id" ]; then
-                            first_found="$id"
-                            log "TARGET LibreOffice found id: $id"
-                            break;
-                        fi
-                    done
-                    IFS=$SAVEIFS
+                    first_found="UTF8_STRING"
+                    # SAVEIFS=$IFS
+                    # IFS=$(printf "\n\b")
+                    # for t in $(printf "%b" "$targets"); do
+                    #     id=$(printf "%b" "$t" | grep -Eo 'application/x-libreoffice-internal-id-[0-9]+')
+                    #     if [ -n "$id" ]; then
+                    #         first_found="$id"
+                    #         log "TARGET LibreOffice found id: $id"
+                    #         break;
+                    #     fi
+                    # done
+                    # IFS=$SAVEIFS
 
-                    if [ -z "$first_found" ]; then
-                        first_found="UTF8_STRING"
-                        log "TARGET LibreOffice did not find id using UTF8_STRING"
-                    fi
+                    # if [ -z "$first_found" ]; then
+                    #     first_found="UTF8_STRING"
+                    #     log "TARGET LibreOffice did not find id using UTF8_STRING"
+                    # fi
                 fi
             fi
 
